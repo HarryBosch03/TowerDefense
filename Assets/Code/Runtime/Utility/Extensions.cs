@@ -10,6 +10,12 @@ namespace TowerDefense.Runtime.Utility
             return find ? find.gameObject : null;
         }
 
+        public static T Find<T>(this Transform transform, string path)
+        {
+            var find = transform.Find(path);
+            return find ? find.GetComponent<T>() : default;
+        }
+
         public static Transform Search(this Transform transform, string name)
         {
             for (var i = 0; i < transform.childCount; i++)

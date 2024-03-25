@@ -9,7 +9,7 @@ namespace TowerDefense.Runtime.Projectiles
         public float trailPersistTime = 1.0f;
 
         [Space]
-        public GameObject trail;
+        public ParticleSystem trail;
         public GameObject hit;
         
         private Vector3 velocity;
@@ -23,8 +23,13 @@ namespace TowerDefense.Runtime.Projectiles
 
         private void OnValidate()
         {
-            if (!trail) trail = gameObject.Find("Trail");
+            if (!trail) trail = transform.Find<ParticleSystem>("Trail");
             if (!hit) hit = gameObject.Find("Hit");
+        }
+
+        private void Start()
+        {
+            trail.Emit(1);
         }
 
         private void FixedUpdate()
@@ -42,7 +47,9 @@ namespace TowerDefense.Runtime.Projectiles
 
             transform.position += velocity * Time.deltaTime;
             velocity += Physics.gravity * args.gravityScale * Time.deltaTime;
-            
+
+            if (trail) trail.Emit(1);
+
             transform.rotation = Quaternion.LookRotation(velocity, Vector3.up);
         }
 
@@ -50,9 +57,10 @@ namespace TowerDefense.Runtime.Projectiles
         {
             if (trail)
             {
+                trail.Emit(1);
                 trail.name += " [DISPOSED]";
                 trail.transform.SetParent(null, true);
-                Destroy(trail, trailPersistTime);
+                Destroy(trail.gameObject, trailPersistTime);
             }
             
             dead = true;
@@ -61,6 +69,12 @@ namespace TowerDefense.Runtime.Projectiles
 
         private void ProcessHit(Ray ray, RaycastHit hit)
         {
+            var damageable = hit.collider.GetComponentInParent<Damageable>();
+            if (damageable != null)
+            {
+                damageable.Damage(args.damage);
+            }
+
             if (args.pierce > 0) args.pierce--;
             else
             {

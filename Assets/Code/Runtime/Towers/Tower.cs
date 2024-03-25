@@ -10,6 +10,7 @@ namespace TowerDefense.Runtime.Towers
     {
         public float tickRate;
         public float range;
+        public TargetMode targetMode;
 
         [Space]
         public bool lookAtMouse;
@@ -48,10 +49,15 @@ namespace TowerDefense.Runtime.Towers
             tickTimer += Time.deltaTime;
             if (tickTimer > 1f / tickRate)
             {
-                target = FindTarget();
+                if (!HasTarget()) target = FindTarget();
                 tickTimer -= 1f / tickRate;
                 Tick();
             }
+        }
+
+        private bool HasTarget()
+        {
+            return target && (target.transform.position - transform.position).sqrMagnitude < range * range;
         }
 
         protected abstract void Tick();
@@ -69,7 +75,7 @@ namespace TowerDefense.Runtime.Towers
                 var length = (enemy.transform.position - transform.position).sqrMagnitude;
                 if (length > range * range) continue;
                 
-                var score = enemy.position;
+                var score = GetScore(enemy);
                 if (score < bestScore) continue;
                 
                 target = enemy;
@@ -77,6 +83,35 @@ namespace TowerDefense.Runtime.Towers
             }
 
             return target;
+        }
+
+        public float GetScore(Enemy enemy)
+        {
+            switch (targetMode)
+            {
+                case TargetMode.First:
+                    return enemy.position;
+                case TargetMode.Last:
+                    return 1f / enemy.position;
+                case TargetMode.Close:
+                    return 1f / (enemy.transform.position - transform.position).sqrMagnitude;
+                case TargetMode.Far:
+                    return (enemy.transform.position - transform.position).sqrMagnitude;
+                case TargetMode.Strong:
+                    return enemy.maxHealth;
+                case TargetMode.Weak:
+                    return 1f / enemy.maxHealth;
+                case TargetMode.Injured:
+                    return 1f / enemy.health;
+                case TargetMode.Healthy:
+                    return enemy.health;
+                case TargetMode.Fast:
+                    return enemy.speed;
+                case TargetMode.Slow:
+                    return 1f / enemy.speed;
+                default:
+                    throw new System.Exception();
+            }
         }
         
         private void OnDrawGizmosSelected()
@@ -91,5 +126,18 @@ namespace TowerDefense.Runtime.Towers
             lines.DrawLoop(Color.red);
         }
 
+        public enum TargetMode
+        {
+            First,
+            Last,
+            Close,
+            Far,
+            Strong,
+            Weak,
+            Injured,
+            Healthy,
+            Fast,
+            Slow,
+        }
     }
 }

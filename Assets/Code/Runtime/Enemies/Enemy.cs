@@ -6,10 +6,12 @@ using UnityEngine.Serialization;
 
 namespace TowerDefense.Runtime.Enemies
 {
-    public class Enemy : MonoBehaviour
+    public class Enemy : MonoBehaviour, Damageable
     {
         public int id;
         public float speed;
+        public int health;
+        public int maxHealth;
         public Path path;
 
         public float position { get; private set; }
@@ -26,6 +28,7 @@ namespace TowerDefense.Runtime.Enemies
         private void OnEnable()
         {
             enemies.Add(this);
+            health -= maxHealth;
         }
 
         private void OnDisable()
@@ -33,12 +36,15 @@ namespace TowerDefense.Runtime.Enemies
             enemies.Remove(this);
         }
 
+        private void Start()
+        {
+            PlaceOnPath(out _);
+        }
+
         private void FixedUpdate()
         {
             position += speed * Time.deltaTime;
-            var corner = path.Sample(position, out var pastEnd);
-            transform.position = corner.position;
-            transform.rotation = corner.rotation;
+            PlaceOnPath(out var pastEnd);
 
             if (pastEnd)
             {
@@ -47,11 +53,32 @@ namespace TowerDefense.Runtime.Enemies
             }
         }
 
+        private void PlaceOnPath(out bool pastEnd)
+        {
+            var corner = path.Sample(position, out pastEnd);
+            transform.position = corner.position;
+            transform.rotation = corner.rotation;
+        }
+
         public static Enemy Spawn(Enemy enemy, Path path)
         {
             var instance = Instantiate(enemy);
             instance.path = path;
             return instance;
+        }
+
+        public void Damage(int damage)
+        {
+            health -= damage;
+            if (health <= 0)
+            {
+                Die();
+            }
+        }
+
+        public void Die()
+        {
+            Destroy(gameObject);
         }
     }
 }
