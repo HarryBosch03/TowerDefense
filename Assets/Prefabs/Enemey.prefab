@@ -152,10 +152,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   id: 0
-  speed: 3
+  speed: 6
   health: 3
-  maxHealth: 0
+  maxHealth: 5
   path: {fileID: 0}
+  rotationSmoothing: 2
 --- !u!1 &6055762513653219633
 GameObject:
   m_ObjectHideFlags: 0

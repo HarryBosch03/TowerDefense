@@ -17,7 +17,8 @@ namespace TowerDefense.Runtime.Player
         public float cameraMinSize;
         public float cameraMaxSize;
 
-        [Space] public float zoomSpeed;
+        [Space] public float zoomKeySensitivity;
+        [Space] public float zoomMouseSensitivity;
         [Space] public float zoomSmoothing;
         [Space] public float fieldOfView;
         
@@ -28,6 +29,11 @@ namespace TowerDefense.Runtime.Player
         private Vector2 position;
         private Vector2 velocity;
         private Vector2 panInput;
+
+        private void OnValidate()
+        {
+            zoomSmoothing = Mathf.Max(0, zoomSmoothing);
+        }
 
         private void Awake()
         {
@@ -44,14 +50,18 @@ namespace TowerDefense.Runtime.Player
         private void UpdateZoom()
         {
             var kb = Keyboard.current;
-            zoom += (kb.eKey.ReadValue() - kb.qKey.ReadValue()) * zoomSpeed * Time.deltaTime;
-            zoom = Mathf.Clamp01(zoom);
+            var m = Mouse.current;
+            targetZoom += (kb.qKey.ReadValue() - kb.eKey.ReadValue()) * zoomKeySensitivity * Time.deltaTime;
+            targetZoom -= m.scroll.ReadValue().y * zoomMouseSensitivity;
+            targetZoom = Mathf.Clamp01(targetZoom);
+
+            currentZoom = Mathf.Lerp(currentZoom, targetZoom, Mathf.Pow(0.5f, zoomSmoothing));
         }
 
         private void BindCamera()
         {
-            var cameraDistance = Mathf.Lerp(cameraMinDistance, cameraMaxDistance, zoom);
-            var size = Mathf.Lerp(cameraMinSize, cameraMaxSize, zoom);
+            var cameraDistance = Mathf.Lerp(cameraMinDistance, cameraMaxDistance, currentZoom);
+            var size = Mathf.Lerp(cameraMinSize, cameraMaxSize, currentZoom);
             
             var rotation = transform.rotation * Quaternion.Euler(cameraAngle, 0f, 0f);
             mainCam.transform.position = transform.position - mainCam.transform.forward * cameraDistance;
@@ -64,7 +74,7 @@ namespace TowerDefense.Runtime.Player
 
         private Vector2 GetPanInput()
         {
-            var basis = Quaternion.Euler(0f, 0f, mainCam.transform.eulerAngles.y);
+            var basis = Quaternion.Euler(0f, 0f, -mainCam.transform.eulerAngles.y);
             var kb = Keyboard.current;
             var raw = new Vector2()
             {

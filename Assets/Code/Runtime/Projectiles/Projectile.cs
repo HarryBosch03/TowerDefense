@@ -1,6 +1,7 @@
 using System;
 using TowerDefense.Runtime.Utility;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace TowerDefense.Runtime.Projectiles
 {
@@ -86,6 +87,13 @@ namespace TowerDefense.Runtime.Projectiles
         public static void Spawn(Projectile projectile, Vector3 position, Vector3 direction, SpawnArgs spawnArgs)
         {
             direction.Normalize();
+
+            var orientation = Quaternion.LookRotation(direction);
+            var px = Random.Range(-Mathf.PI, Mathf.PI);
+            var py = Random.Range(0f, spawnArgs.spreadAngle);
+            var offset = new Vector2(Mathf.Cos(px), Mathf.Sin(px)) * py;
+            orientation *= Quaternion.Euler(offset.x, offset.y, 0f);
+            direction = orientation * Vector3.forward;
             
             var instance = Instantiate(projectile, position, Quaternion.LookRotation(direction));
             instance.gameObject.SetActive(true);
@@ -100,6 +108,7 @@ namespace TowerDefense.Runtime.Projectiles
             public float speed;
             public float gravityScale;
             public int pierce;
+            public float spreadAngle;
         }
     }
 }

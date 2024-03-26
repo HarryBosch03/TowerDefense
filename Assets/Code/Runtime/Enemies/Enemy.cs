@@ -13,6 +13,7 @@ namespace TowerDefense.Runtime.Enemies
         public int health;
         public int maxHealth;
         public Path path;
+        public float rotationSmoothing;
 
         public float position { get; private set; }
 
@@ -28,7 +29,7 @@ namespace TowerDefense.Runtime.Enemies
         private void OnEnable()
         {
             enemies.Add(this);
-            health -= maxHealth;
+            health = maxHealth;
         }
 
         private void OnDisable()
@@ -57,7 +58,7 @@ namespace TowerDefense.Runtime.Enemies
         {
             var corner = path.Sample(position, out pastEnd);
             transform.position = corner.position;
-            transform.rotation = corner.rotation;
+            transform.rotation = Quaternion.Slerp(transform.rotation, corner.rotation, Mathf.Pow(0.5f, rotationSmoothing));
         }
 
         public static Enemy Spawn(Enemy enemy, Path path)

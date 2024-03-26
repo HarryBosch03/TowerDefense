@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using TowerDefense.Runtime.Projectiles;
 using TowerDefense.Runtime.Utility;
 using UnityEngine;
@@ -7,12 +9,16 @@ namespace TowerDefense.Runtime.Towers
     public class ShootaTower : Tower
     {
         public Projectile.SpawnArgs spawnArgs;
-        public float shootAngle = 5f;
 
+        public int burstCount;
+        public int waitCount;
+        
         [Space]
         public Projectile projectilePrefab;
         public Transform muzzle;
 
+        public Ray shootRay => new Ray(muzzle.position, muzzle.forward);
+        
         protected override void Awake()
         {
             base.Awake();
@@ -23,19 +29,22 @@ namespace TowerDefense.Runtime.Towers
         {
             if (!projectilePrefab) projectilePrefab = GetComponentInChildren<Projectile>();
             if (!muzzle) muzzle = transform.Search("Muzzle");
+
+            burstCount = Mathf.Max(1, burstCount);
+            waitCount = Mathf.Max(0, waitCount);
         }
 
-        protected override void Tick()
+        protected override IEnumerator Tick()
         {
-            if (!target) return;
+            while (!target || !HasLineOfSight(shootRay, target.gameObject)) yield return null;
 
-            var direction = (target.transform.position - muzzle.position).normalized;
-            var dot = Vector3.Dot(muzzle.forward, direction);
-            var angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
-            if (angle < shootAngle)
+            for (var i = 0; i < burstCount; i++)
             {
                 Projectile.Spawn(projectilePrefab, muzzle.position, muzzle.forward, spawnArgs);
+                yield return null;
             }
+
+            for (var i = 0; i < waitCount; i++) yield return null;
         }
     }
 }

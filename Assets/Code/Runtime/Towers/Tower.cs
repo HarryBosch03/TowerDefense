@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TowerDefense.Runtime.Enemies;
 using TowerDefense.Runtime.Utility;
 using UnityEngine;
@@ -12,32 +13,13 @@ namespace TowerDefense.Runtime.Towers
         public float range;
         public TargetMode targetMode;
 
-        [Space]
-        public bool lookAtMouse;
-
         private float tickTimer;
         private Camera mainCamera;
+        private IEnumerator routine;
         
         public Enemy target { get; private set; }
 
-        public Vector3? targetPosition
-        {
-            get
-            {
-                if (lookAtMouse)
-                {
-                    var plane = new Plane(Vector3.up, transform.position);
-                    if (!mainCamera) return null;
-                    var ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                    if (plane.Raycast(ray, out var enter))
-                    {
-                        return ray.GetPoint(enter);
-                    }
-                    return null;
-                }
-                return target ? target.transform.position : null;
-            }
-        }
+        public Vector3? targetPosition { get; set; }
 
         protected virtual void Awake()
         {
@@ -46,21 +28,26 @@ namespace TowerDefense.Runtime.Towers
 
         private void FixedUpdate()
         {
+            targetPosition = GetTargetPosition();
+            
             tickTimer += Time.deltaTime;
             if (tickTimer > 1f / tickRate)
             {
                 if (!HasTarget()) target = FindTarget();
                 tickTimer -= 1f / tickRate;
-                Tick();
+                
+                if (routine == null || !routine.MoveNext()) routine = Tick();
             }
         }
+
+        protected virtual Vector3? GetTargetPosition() => target ? target.transform.position : null;
 
         private bool HasTarget()
         {
             return target && (target.transform.position - transform.position).sqrMagnitude < range * range;
         }
 
-        protected abstract void Tick();
+        protected abstract IEnumerator Tick();
 
         protected Enemy FindTarget()
         {
@@ -126,6 +113,11 @@ namespace TowerDefense.Runtime.Towers
             lines.DrawLoop(Color.red);
         }
 
+        public static bool HasLineOfSight(Ray ray, GameObject target, float range = 100f)
+        {
+            return Physics.Raycast(ray, out var hit, range) && hit.collider.transform.IsChildOf(target.transform);
+        }
+        
         public enum TargetMode
         {
             First,
